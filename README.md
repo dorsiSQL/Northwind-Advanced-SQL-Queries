@@ -1,9 +1,6 @@
 # Northwind SQL Queries Project
-
 This repository contains **5 advanced SQL queries** built and fully tested on the **Northwind SQLite dataset**. The queries demonstrate practical SQL skills such as joins, aggregations, NULL detection, HAVING filters, and date-based comparisons.
-
 ## Queries Included
-
 1. **Customers without orders**  
    - Identifies customers who have never placed an order.
    - Tables used: `Customers`, `Orders`.
