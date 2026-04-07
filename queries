@@ -1,0 +1,44 @@
+-- Customers who have never placed an order
+SELECT Customers.CustomerID, Customers.CustomerName, Customers.ContactName, Customers.Country
+FROM Customers
+LEFT JOIN Orders
+  ON Customers.CustomerID = Orders.CustomerID
+WHERE Orders.OrderID IS NULL;
+
+-- Top-selling product overall
+SELECT Products.ProductName, SUM(OrderDetails.Quantity) AS TotalSold
+FROM OrderDetails
+JOIN Products ON OrderDetails.ProductID = Products.ProductID
+GROUP BY Products.ProductName
+ORDER BY TotalSold DESC
+LIMIT 1;
+
+-- Orders with no order details
+SELECT Orders.OrderID, Orders.CustomerID
+FROM Orders
+LEFT JOIN OrderDetails
+  ON Orders.OrderID = OrderDetails.OrderID
+WHERE OrderDetails.OrderID IS NULL;
+
+-- Orders exceeding $500
+SELECT Orders.OrderID, Orders.CustomerID,
+       SUM(OrderDetails.Quantity * Products.Price) AS TotalAmount
+FROM Orders
+JOIN OrderDetails ON Orders.OrderID = OrderDetails.OrderID
+JOIN Products ON OrderDetails.ProductID = Products.ProductID
+GROUP BY Orders.OrderID, Orders.CustomerID
+HAVING TotalAmount > 500
+ORDER BY TotalAmount DESC;
+
+-- Compare sales per customer between 1996 and 1997
+SELECT Orders.CustomerID, Customers.ContactName,
+       SUM(CASE WHEN strftime('%Y', Orders.OrderDate) = '1996' 
+                THEN OrderDetails.Quantity * Products.Price ELSE 0 END) AS Sales1996,
+       SUM(CASE WHEN strftime('%Y', Orders.OrderDate) = '1997' 
+                THEN OrderDetails.Quantity * Products.Price ELSE 0 END) AS Sales1997
+FROM Orders
+JOIN Customers ON Orders.CustomerID = Customers.CustomerID
+JOIN OrderDetails ON Orders.OrderID = OrderDetails.OrderID
+JOIN Products ON OrderDetails.ProductID = Products.ProductID
+GROUP BY Orders.CustomerID, Customers.ContactName
+ORDER BY Sales1997 - Sales1996 DESC;
