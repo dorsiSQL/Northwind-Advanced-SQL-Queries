@@ -187,6 +187,7 @@ sqlite3 northwind.db < 01_customers_without_orders.sql
 
 ## 📁 Estructura del proyecto
 Northwind-Advanced-SQL-Queries/
+
 ├── 01_customers_without_orders.sql
 
 ├── 02_top_selling_product_overall.sql
