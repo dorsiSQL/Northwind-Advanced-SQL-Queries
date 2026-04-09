@@ -1,4 +1,4 @@
-markdown# 🗄️ Northwind — Consultas SQL Avanzadas
+# 🗄️ Northwind — Consultas SQL Avanzadas
 
 > **5 consultas SQL orientadas al negocio** construidas sobre el dataset clásico Northwind,
 > demostrando pensamiento analítico real — no solo sintaxis.
@@ -25,19 +25,17 @@ un analista de datos o desarrollador BI en el trabajo.
 Útil para limpieza de CRM, campañas de reactivación y auditorías de calidad de datos.
 
 ```sql
--- Técnica: LEFT JOIN + filtrado de NULLs
-SELECT c.CustomerID, c.CompanyName
+-- Customers who have never placed an order
+SELECT
+    c.CustomerID,
+    c.CustomerName,
+    c.ContactName,
+    c.Country
 FROM Customers c
-LEFT JOIN Orders o ON c.CustomerID = o.CustomerID
+    LEFT JOIN Orders o
+        ON c.CustomerID = o.CustomerID
 WHERE o.OrderID IS NULL;
 ```
-
-**Resultado de ejemplo:**
-
-| CustomerID | CompanyName        |
-|------------|--------------------|
-| FISSA      | FISSA Fabrica...   |
-| PARIS      | Paris spécialités  |
 
 ---
 
@@ -47,12 +45,17 @@ WHERE o.OrderID IS NULL;
 Clave para priorizar inventario y negociar con proveedores.
 
 ```sql
--- Técnica: agregación con SUM + ORDER BY + LIMIT
-SELECT p.ProductName, SUM(od.Quantity) AS TotalUnidadesVendidas
-FROM Products p
-JOIN "Order Details" od ON p.ProductID = od.ProductID
-GROUP BY p.ProductName
-ORDER BY TotalUnidadesVendidas DESC
+-- Top-selling product overall
+SELECT
+    p.ProductName,
+    SUM(od.Quantity) AS TotalSold
+FROM OrderDetails od
+    JOIN Products p
+        ON od.ProductID = p.ProductID
+GROUP BY
+    p.ProductName
+ORDER BY
+    TotalSold DESC
 LIMIT 1;
 ```
 
@@ -65,10 +68,13 @@ Un chequeo de integridad de datos — el tipo que previene errores de facturaci�
 y reportes incorrectos.
 
 ```sql
--- Técnica: LEFT JOIN + detección de registros huérfanos
-SELECT o.OrderID, o.OrderDate
+-- Orders with no order details
+SELECT
+    o.OrderID,
+    o.CustomerID
 FROM Orders o
-LEFT JOIN "Order Details" od ON o.OrderID = od.OrderID
+LEFT JOIN OrderDetails od
+    ON o.OrderID = od.OrderID
 WHERE od.OrderID IS NULL;
 ```
 
@@ -80,13 +86,23 @@ WHERE od.OrderID IS NULL;
 Base para segmentación de clientes VIP y reportes de rendimiento de ventas.
 
 ```sql
--- Técnica: JOIN múltiple + SUM + HAVING
-SELECT o.OrderID, SUM(od.Quantity * od.UnitPrice) AS TotalOrden
+-- Orders exceeding $500
+SELECT
+    o.OrderID,
+    o.CustomerID,
+        SUM(od.Quantity * p.Price) AS TotalAmount
 FROM Orders o
-JOIN "Order Details" od ON o.OrderID = od.OrderID
-GROUP BY o.OrderID
-HAVING TotalOrden > 500
-ORDER BY TotalOrden DESC;
+    JOIN OrderDetails od
+        ON o.OrderID = od.OrderID
+    JOIN Products p
+        ON od.ProductID = p.ProductID
+GROUP BY
+    o.OrderID,
+    o.CustomerID
+HAVING
+    TotalAmount > 500
+ORDER BY
+    TotalAmount DESC;
 ```
 
 ---
@@ -94,22 +110,52 @@ ORDER BY TotalOrden DESC;
 ### 5. Comparación de ventas: 1996 vs 1997 por cliente
 **Pregunta de negocio:** *"¿Qué clientes crecieron — y cuáles no — año a año?"*
 
-La consulta más compleja del set. Usa agregación condicional para pivotar datos
-por año sin subqueries, permitiendo comparación directa YoY por cliente.
+La consulta más compleja del set. Usa agregación condicional con `CASE` para
+comparar ventas por año en una sola query, incluyendo la diferencia neta por cliente.
 
 ```sql
--- Técnica: CASE dentro de SUM + strftime para extracción de fechas
+-- Compare sales per customer between 1996 and 1997
 SELECT
-    c.CompanyName,
-    SUM(CASE WHEN strftime('%Y', o.OrderDate) = '1996'
-             THEN od.Quantity * od.UnitPrice ELSE 0 END) AS Ventas_1996,
-    SUM(CASE WHEN strftime('%Y', o.OrderDate) = '1997'
-             THEN od.Quantity * od.UnitPrice ELSE 0 END) AS Ventas_1997
-FROM Customers c
-JOIN Orders o ON c.CustomerID = o.CustomerID
-JOIN "Order Details" od ON o.OrderID = od.OrderID
-GROUP BY c.CompanyName
-ORDER BY Ventas_1997 DESC;
+    o.CustomerID,
+    c.ContactName,
+    SUM(
+        CASE
+            WHEN strftime('%Y', o.OrderDate) = '1996'
+            THEN od.Quantity * p.Price
+            ELSE 0
+        END
+    ) AS Sales1996,
+    SUM(
+        CASE
+            WHEN strftime('%Y', o.OrderDate) = '1997'
+            THEN od.Quantity * p.Price
+            ELSE 0
+        END
+    ) AS Sales1997,
+    SUM(
+        CASE
+            WHEN strftime('%Y', o.OrderDate) = '1997'
+            THEN od.Quantity * p.Price
+            ELSE 0
+        END
+    )
+    -
+    SUM(
+        CASE
+            WHEN strftime('%Y', o.OrderDate) = '1996'
+            THEN od.Quantity * p.Price
+            ELSE 0
+        END
+    ) AS SalesDifference
+FROM Orders o
+JOIN Customers c      ON o.CustomerID = c.CustomerID
+JOIN OrderDetails od  ON o.OrderID = od.OrderID
+JOIN Products p       ON od.ProductID = p.ProductID
+GROUP BY
+    o.CustomerID,
+    c.ContactName
+ORDER BY
+    SalesDifference DESC;
 ```
 
 ---
