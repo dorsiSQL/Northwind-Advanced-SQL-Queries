@@ -203,6 +203,6 @@ Northwind-Advanced-SQL-Queries/
 ## 👤 Sobre el autor
 
 Desarrollado por [@dorsiSQL](https://github.com/dorsiSQL) como parte de un portfolio SQL
-práctico enfocado en escenarios de negocio reales — no ejemplos de juguete.
+práctico enfocado en escenarios de negocio reales.
 
 > Abierto a roles de analista de datos y posiciones orientadas a SQL. ¡No dudes en contactarme!
